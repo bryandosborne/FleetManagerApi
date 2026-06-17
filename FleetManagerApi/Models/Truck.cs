@@ -3,8 +3,8 @@
     public class Truck
     {
         public int Id { get; set; }
+        public string TruckNumber { get; set; } = string.Empty;
         public int DriverId { get; set; }
-        public int LoadId { get; set; }
 
     }
 }
