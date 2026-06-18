@@ -63,8 +63,8 @@ namespace FleetManagerApi.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("DeliveryDate")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateTime?>("DeliveryDate")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("DeliveryLocation")
                         .IsRequired()
@@ -74,15 +74,18 @@ namespace FleetManagerApi.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("ETA")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateTime?>("ETA")
+                        .HasColumnType("timestamp without time zone");
 
-                    b.Property<DateTime>("PickupDate")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<DateTime?>("PickupDate")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("PickupLocation")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.Property<int>("TruckId")
                         .HasColumnType("integer");

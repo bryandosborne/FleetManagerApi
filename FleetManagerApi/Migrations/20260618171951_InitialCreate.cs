@@ -33,12 +33,16 @@ namespace FleetManagerApi.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    TruckId = table.Column<int>(type: "integer", nullable: false),
                     BOL = table.Column<string>(type: "text", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: false),
                     CurrentLocation = table.Column<string>(type: "text", nullable: false),
-                    PickupDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    DeliveryDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ETA = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    PickupLocation = table.Column<string>(type: "text", nullable: false),
+                    DeliveryLocation = table.Column<string>(type: "text", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    PickupDate = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
+                    DeliveryDate = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
+                    ETA = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -51,7 +55,8 @@ namespace FleetManagerApi.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    TruckNumber = table.Column<string>(type: "text", nullable: false)
+                    TruckNumber = table.Column<string>(type: "text", nullable: false),
+                    DriverId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
