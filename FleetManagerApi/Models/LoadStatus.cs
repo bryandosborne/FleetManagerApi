@@ -5,6 +5,7 @@
         AwaitingPickup,
         InTransit,
         Delivered,
+        Delayed,
         Cancelled
     }
 }
