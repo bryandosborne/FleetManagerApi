@@ -30,4 +30,10 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+app.MapDriverEndpoints();
+
+app.MapTruckEndpoints();
+
+app.MapLoadEndpoints();
+
 app.Run();

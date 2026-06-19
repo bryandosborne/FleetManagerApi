@@ -3,6 +3,7 @@ using System;
 using FleetManagerApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FleetManagerApi.Migrations
 {
     [DbContext(typeof(FleetManagerApiContext))]
-    partial class FleetManagerApiContextModelSnapshot : ModelSnapshot
+    [Migration("20260619212758_UpdateLogEvent")]
+    partial class UpdateLogEvent
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -61,20 +64,16 @@ namespace FleetManagerApi.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<decimal>("CurrentLatitude")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("CurrentLongitude")
-                        .HasColumnType("numeric");
+                    b.Property<string>("CurrentLocation")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("DeliveryDate")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<decimal>("DeliveryLatitude")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("DeliveryLongitude")
-                        .HasColumnType("numeric");
+                    b.Property<string>("DeliveryLocation")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -86,11 +85,9 @@ namespace FleetManagerApi.Migrations
                     b.Property<DateTime?>("PickupDate")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<decimal>("PickupLatitude")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("PickupLongitude")
-                        .HasColumnType("numeric");
+                    b.Property<string>("PickupLocation")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
