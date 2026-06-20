@@ -3,6 +3,7 @@ using System;
 using FleetManagerApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FleetManagerApi.Migrations
 {
     [DbContext(typeof(FleetManagerApiContext))]
-    partial class FleetManagerApiContextModelSnapshot : ModelSnapshot
+    [Migration("20260620190110_DriverHOSPropAdd")]
+    partial class DriverHOSPropAdd
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
