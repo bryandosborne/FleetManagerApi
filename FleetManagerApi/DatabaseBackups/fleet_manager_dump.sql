@@ -2,12 +2,12 @@
 -- PostgreSQL database dump
 --
 
-\restrict BuziAfgPvHaCuge1eKsLei1Da6aPxqwqKvEF2ihcatcUd7LLhNLUqwKoK4etZya
+\restrict nApbd5vlTJzL8MorUfQhLaBacCUZH5S9wPEhhLObWpa8GpyHTnVVpRYiS8Qr5d9
 
 -- Dumped from database version 18.3
 -- Dumped by pg_dump version 18.4
 
--- Started on 2026-06-20 20:31:51
+-- Started on 2026-06-21 16:03:07
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -395,11 +395,11 @@ ALTER TABLE ONLY public."LogEvents"
     ADD CONSTRAINT "FK_LogEvents_Drivers_DriverId" FOREIGN KEY ("DriverId") REFERENCES public."Drivers"("Id") ON DELETE CASCADE;
 
 
--- Completed on 2026-06-20 20:31:51
+-- Completed on 2026-06-21 16:03:07
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict BuziAfgPvHaCuge1eKsLei1Da6aPxqwqKvEF2ihcatcUd7LLhNLUqwKoK4etZya
+\unrestrict nApbd5vlTJzL8MorUfQhLaBacCUZH5S9wPEhhLObWpa8GpyHTnVVpRYiS8Qr5d9
 
