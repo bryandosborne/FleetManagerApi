@@ -1,3 +1,7 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Dockerfile" />
+  </Folder>
+  <Project Path="FleetManagerApi.Tests/FleetManagerApi.Tests.csproj" Id="3675fcbe-7e28-427e-8f0d-0c8d94b38ce2" />
   <Project Path="FleetManagerApi/FleetManagerApi.csproj" />
 </Solution>

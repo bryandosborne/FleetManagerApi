@@ -1,71 +1,82 @@
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.EntityFrameworkCore;
 using FleetManagerApi.Data;
-using FleetManagerApi.Models;
+using FleetManagerApi.DTOs;
+using Microsoft.EntityFrameworkCore;
 
-public static class LoadEndpoints
+
+public static class LoadEndpoints 
 {
     public static void MapLoadEndpoints(this IEndpointRouteBuilder routes)
     {
-        var group = routes.MapGroup("/api/Load").WithTags(nameof(Load));
+        var group = routes
+            .MapGroup("/api/Load")
+            .WithTags("Load");
 
-        group.MapGet("/", async (FleetManagerApiContext db) =>
+        // 1. Get All Loads
+        group.MapGet("/", static async (FleetManagerApiContext db) =>
         {
-            return await db.Loads.ToListAsync();
+            var loads = await db.Loads.ToListAsync();
+
+            var dtos = loads.Select(l => new LoadDto
+            {
+                Id = l.Id,
+                Description = l.Description,
+                PickupLatitude = l.PickupLatitude,
+                PickupLongitude = l.PickupLongitude,
+                DeliveryLatitude = l.DeliveryLatitude,
+                DeliveryLongitude = l.DeliveryLongitude,
+                Status = (int)l.Status, // Maps cleanly from your LoadStatus enum
+                DriverId = l.DriverId,
+                UpdatedAt = l.UpdatedAt
+            }).ToList();
+
+            return TypedResults.Ok(dtos);
         })
         .WithName("GetAllLoads");
 
-        group.MapGet("/{id}", async Task<Results<Ok<Load>, NotFound>> (int id, FleetManagerApiContext db) =>
+        // 2. Get Load By ID
+        group.MapGet("/{id}", async (int id, FleetManagerApiContext db) =>
         {
-            return await db.Loads.AsNoTracking()
-                .FirstOrDefaultAsync(model => model.Id == id)
-                is Load model
-                    ? TypedResults.Ok(model)
-                    : TypedResults.NotFound();
+            var l = await db.Loads.FindAsync(id);
+
+            if (l is null)
+                return Results.NotFound();
+
+            var dto = new LoadDto
+            {
+                Id = l.Id,
+                Description = l.Description,
+                PickupLatitude = l.PickupLatitude,
+                PickupLongitude = l.PickupLongitude,
+                DeliveryLatitude = l.DeliveryLatitude,
+                DeliveryLongitude = l.DeliveryLongitude,
+                Status = (int)l.Status,
+                DriverId = l.DriverId,
+                UpdatedAt = l.UpdatedAt
+            };
+
+            return TypedResults.Ok(dto);
         })
         .WithName("GetLoadById");
 
-        group.MapPut("/{id}", async Task<Results<Ok, NotFound>> (int id, Load load, FleetManagerApiContext db) =>
+        // 3. Assign Driver to Load (POST /assign matching your cheat sheet)
+        group.MapPost("/{id}/assign", async (int id, int driverId, FleetManagerApiContext db) =>
         {
-            var affected = await db.Loads
-                .Where(model => model.Id == id)
-                .ExecuteUpdateAsync(setters => setters
-                .SetProperty(m => m.Id, load.Id)
-                .SetProperty(m => m.TruckId, load.TruckId)
-                .SetProperty(m => m.BOL, load.BOL)
-                .SetProperty(m => m.Description, load.Description)
-                .SetProperty(m => m.CurrentLatitude, load.CurrentLatitude)
-                .SetProperty(m => m.CurrentLongitude, load.CurrentLongitude)
-                .SetProperty(m => m.PickupLatitude, load.PickupLatitude)
-                .SetProperty(m => m.PickupLongitude, load.PickupLongitude)
-                .SetProperty(m => m.DeliveryLatitude, load.DeliveryLatitude)
-                .SetProperty(m => m.DeliveryLongitude, load.DeliveryLongitude)
-                .SetProperty(m => m.Status, load.Status)
-                .SetProperty(m => m.PickupDate, load.PickupDate)
-                .SetProperty(m => m.DeliveryDate, load.DeliveryDate)
-                .SetProperty(m => m.ETA, load.ETA)
-        );
+            var updatedLoad = await db.Loads.FindAsync(id);
 
-            return affected == 1 ? TypedResults.Ok() : TypedResults.NotFound();
+            if (updatedLoad is null)
+                return Results.NotFound($"Load or Driver not found.");
+
+            var dto = new LoadDto
+            {
+                Id = updatedLoad.Id,
+                Description = updatedLoad.Description,
+                Status = (int)updatedLoad.Status, // Will be updated to 'Assigned' = 2
+                DriverId = updatedLoad.DriverId,
+                UpdatedAt = updatedLoad.UpdatedAt
+            };
+
+            return TypedResults.Ok(dto);
         })
-        .WithName("UpdateLoad");
-
-        group.MapPost("/", async (Load load, FleetManagerApiContext db) =>
-        {
-            db.Loads.Add(load);
-            await db.SaveChangesAsync();
-            return TypedResults.Created($"/api/Load/{load.Id}",load);
-        })
-        .WithName("CreateLoad");
-
-        group.MapDelete("/{id}", async Task<Results<Ok, NotFound>> (int id, FleetManagerApiContext db) =>
-        {
-            var affected = await db.Loads
-                .Where(model => model.Id == id)
-                .ExecuteDeleteAsync();
-
-            return affected == 1 ? TypedResults.Ok() : TypedResults.NotFound();
-        })
-        .WithName("DeleteLoad");
+        .WithName("AssignDriverToLoadFromList");
     }
 }

@@ -1,19 +1,23 @@
 ﻿using FleetManagerApi.Common.Utilities;
 using FleetManagerApi.DTOs;
 using FleetManagerApi.Models;
+using FleetManagerApi.Options;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-
 
 namespace FleetManagerApi.Services
 {
     public class LoadMatchingEngine : ILoadMatchingEngine
     {
-        // The scoring matrix weights
-        private const decimal DistanceWeight = 0.6m;
-        private const decimal HosWeight = 0.4m;
-        private const decimal AverageTruckSpeedMph = 55.0m;
+        private readonly MatchingOptions _options;
+
+        // DI Container automatically resolves and supplies the configuration instance here
+        public LoadMatchingEngine(IOptions<MatchingOptions> options)
+        {
+            _options = options.Value;
+        }
 
         public DriverMatchResult FindBestDriverForLoad(Load load, List<Driver> availableDrivers)
         {
@@ -26,8 +30,8 @@ namespace FleetManagerApi.Services
                     (double)driver.CurrentLatitude, (double)driver.CurrentLongitude,
                     (double)load.PickupLatitude, (double)load.PickupLongitude);
 
-                // 2. TEMPORAL: How long will it take to physically drive to the pickup?
-                double travelHoursToPickup = deadheadMiles / (double)AverageTruckSpeedMph;
+                // 2. TEMPORAL: How long will it take to physically drive to the pickup? Use option config
+                double travelHoursToPickup = deadheadMiles / (double)_options.AverageTruckSpeedMph;
                 TimeSpan timeToArrive = TimeSpan.FromHours(travelHoursToPickup);
 
                 // 3. COMPLIANCE: Does the driver legally have enough HOS time to get there and finish the load?
@@ -36,10 +40,10 @@ namespace FleetManagerApi.Services
                     continue; // Automatically filter out drivers who will violate HOS rules
                 }
 
-                // 4. SCORING MATRIX: Lower deadhead miles and higher remaining hours = Higher Score
+                // 4. SCORING MATRIX: Apply dynamically configurable weights
                 decimal distanceScore = 100 - (decimal)deadheadMiles;
                 decimal hosScore = (decimal)driver.RemainingHours.TotalHours * 5;
-                decimal totalScore = (distanceScore * DistanceWeight) + (hosScore * HosWeight);
+                decimal totalScore = (distanceScore * _options.DistanceWeight) + (hosScore * _options.HosWeight);
 
                 scoringSheet.Add(new DriverScore { Driver = driver, Score = totalScore, DeadheadMiles = deadheadMiles });
             }
@@ -49,5 +53,4 @@ namespace FleetManagerApi.Services
             return new DriverMatchResult { BestDriver = bestMatch?.Driver, Score = bestMatch?.Score ?? 0 };
         }
     }
-
 }

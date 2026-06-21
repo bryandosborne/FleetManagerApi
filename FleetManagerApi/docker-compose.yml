@@ -1,0 +1,32 @@
+﻿version: '3.8'
+
+services:
+  fleet-db:
+    image: postgres:15-alpine
+    container_name: fleet-postgres-db
+    environment:
+      POSTGRES_DB: FleetDb
+      POSTGRES_USER: fleet_admin
+      POSTGRES_PASSWORD: YourSecurePasswordHere
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  fleet-api:
+    image: fleetmanagerapi:latest
+    container_name: fleet-minimal-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=fleet-db;Database=FleetDb;Username=fleet_admin;Password=YourSecurePasswordHere
+    depends_on:
+      - fleet-db
+
+volumes:
+  postgres_data:
+

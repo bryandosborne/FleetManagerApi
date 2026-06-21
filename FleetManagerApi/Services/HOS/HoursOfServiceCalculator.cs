@@ -132,30 +132,48 @@
         }
 
         /// <summary>
-        /// Scans backward to locate the end time of the most recent continuous rest block matching a targeted threshold.
+        /// Scans sequentially backward from the evaluation time to locate the exact timestamp 
+        /// when the most recent continuous rest block satisfied the required duration threshold.
         /// </summary>
         public DateTime FindLastResetTime(List<LogEvent> sortedLogs, TimeSpan requiredResetDuration, DateTime evaluationTime)
         {
-            DateTime lastResetEndTime = sortedLogs.First().Timestamp;
+            if (sortedLogs == null || !sortedLogs.Any())
+                return DateTime.MinValue;
 
-            for (int i = 0; i < sortedLogs.Count; i++)
+            // Filter to only events that started before or exactly at the evaluation point
+            var pastLogs = sortedLogs.Where(l => l.Timestamp <= evaluationTime).ToList();
+            if (!pastLogs.Any())
+                return pastLogs.First().Timestamp;
+
+            DateTime currentSegmentEnd = evaluationTime;
+
+            // Scan backwards from the most recent historical log entry
+            for (int i = pastLogs.Count - 1; i >= 0; i--)
             {
-                var current = sortedLogs[i];
+                var current = pastLogs[i];
 
-                // Resets are achieved when a driver is completely off-duty or inside the sleeper berth
-                if (current.Status == DutyStatus.OffDuty || current.Status == DutyStatus.SleeperBerth)
+                // Calculate the continuous duration of this rest state segment
+                TimeSpan segmentDuration = currentSegmentEnd - current.Timestamp;
+                bool isRestState = current.Status == DutyStatus.OffDuty || current.Status == DutyStatus.SleeperBerth;
+
+                if (isRestState && segmentDuration >= requiredResetDuration)
                 {
-                    DateTime start = current.Timestamp;
-                    DateTime end = (i + 1 < sortedLogs.Count) ? sortedLogs[i + 1].Timestamp : evaluationTime;
+                    // The reset was legally achieved exactly when the required duration threshold was satisfied
+                    return current.Timestamp.Add(requiredResetDuration);
+                }
 
-                    if (end - start >= requiredResetDuration)
-                    {
-                        lastResetEndTime = end;
-                    }
+                // If the driver is not in a rest state, this active block cuts the continuous rest chain
+                if (!isRestState)
+                {
+                    // Move our lookback marker to when this active work segment began
+                    currentSegmentEnd = current.Timestamp;
                 }
             }
-            return lastResetEndTime;
+
+            // Default fallback to the oldest available tracking point if no reset has occurred in history
+            return sortedLogs.First().Timestamp;
         }
+
 
         public HosRemainingTime GetFullLimits()
         {

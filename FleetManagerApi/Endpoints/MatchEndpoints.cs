@@ -2,12 +2,8 @@
 using FleetManagerApi.DTOs;
 using FleetManagerApi.Models;
 using FleetManagerApi.Services;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
+using FleetManagerApi.Services.HOS;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Threading.Tasks;
 
 namespace FleetManagerApi.Endpoints
 {
@@ -18,7 +14,7 @@ namespace FleetManagerApi.Endpoints
             var group = routes.MapGroup("/api/match").WithTags("Load Matching Engine");
 
             // GET: /api/match/load/{loadId}
-            group.MapGet("/load/{loadId:int}", async (int loadId, FleetManagerApiContext db, ILoadMatchingEngine matchingEngine) =>
+            group.MapGet("/load/{loadId:int}", static async (int loadId, FleetManagerApiContext db, ILoadMatchingEngine matchingEngine) =>
             {
                 // 1. Fetch the requested load
                 var load = await db.Loads.FindAsync(loadId);
@@ -28,7 +24,6 @@ namespace FleetManagerApi.Endpoints
                 }
 
                 // 2. Fetch all drivers eagerly including their live tracking log events
-                // This ensures our HOS and location properties are populated
                 var drivers = await db.Drivers
                     .Include(d => d.LogEvents)
                     .ToListAsync();
@@ -38,9 +33,8 @@ namespace FleetManagerApi.Endpoints
                     return Results.BadRequest("No drivers are currently registered in the system to evaluate.");
                 }
 
-                // 3. Process each driver through the DriverService tracking properties
-                // (This acts as the real-time telemetry processing before scoring)
-                var calculator = new Services.HOS.HoursOfServiceCalculator();
+                // 3. Process each driver through the live tracking properties
+                var calculator = new HoursOfServiceCalculator();
                 var evaluationTime = DateTime.UtcNow;
 
                 foreach (var driver in drivers)
@@ -62,25 +56,34 @@ namespace FleetManagerApi.Endpoints
                     }
                 }
 
-                // 4. Pass our prepared data arrays into our decoupled business logic engine
+                // 4. Pass our prepared data arrays into our business logic engine
                 DriverMatchResult matchResult = matchingEngine.FindBestDriverForLoad(load, drivers);
 
                 if (matchResult.BestDriver == null)
                 {
-                    return Results.Ok(new
+                    return Results.Ok(new DriverMatchResultDto
                     {
                         Message = "Evaluation complete. No drivers have sufficient Hours of Service (HOS) to accept this dispatch.",
-                        Result = matchResult
+                        BestDriverId = null,
+                        BestDriverName = string.Empty,
+                        Score = 0
                     });
                 }
 
-                return Results.Ok(matchResult);
+                // 5. Explicitly map our Domain Match Entity to a clean Public DTO
+                return Results.Ok(new DriverMatchResultDto
+                {
+                    Message = "Optimal match found successfully.",
+                    BestDriverId = matchResult.BestDriver.Id,
+                    BestDriverName = $"{matchResult.BestDriver.FirstName} {matchResult.BestDriver.LastName}",
+                    Score = matchResult.Score
+                });
             })
             .WithName("GetBestDriverForLoad");
 
 
             // POST: /api/match/assign
-            group.MapPost("/assign", async (AssignLoadRequest request, FleetManagerApiContext db) =>
+            group.MapPost("/assign", static async (AssignLoadRequest request, FleetManagerApiContext db) =>
             {
                 // 1. Fetch the target load
                 var load = await db.Loads.FindAsync(request.LoadId);
@@ -97,7 +100,6 @@ namespace FleetManagerApi.Endpoints
                 }
 
                 // 3. Verification: Ensure the load isn't already assigned or completed
-                // (Note: Adjust 'LoadStatus.Assigned' based on your actual LoadStatus enum values)
                 if (load.Status == LoadStatus.Assigned)
                 {
                     return Results.Conflict($"Load {request.LoadId} is already assigned to another driver.");
@@ -111,23 +113,22 @@ namespace FleetManagerApi.Endpoints
                 // 5. Commit the transaction to PostgreSQL
                 await db.SaveChangesAsync();
 
-                // Return a clean confirmation DTO back to the dispatch dashboard UI
-                return Results.Ok(new
+                // 6. Return a dedicated, structured response DTO instead of an anonymous type
+                return Results.Ok(new LoadAssignmentResponseDto
                 {
                     Message = $"Successfully dispatched load {load.Id} ({load.Description}) to driver {driver.FirstName} {driver.LastName}.",
                     LoadId = load.Id,
                     DriverId = driver.Id,
-                    AssignedAt = DateTime.UtcNow
+                    AssignedAt = load.UpdatedAt ?? DateTime.UtcNow
                 });
             })
             .WithName("AssignDriverToLoad");
         }
 
-
-    // ====================================================================
-    // INPUT DATA CONTRACTS (Request DTOs)
-    // ====================================================================
-    public class AssignLoadRequest
+        // ====================================================================
+        // INPUT DATA CONTRACTS (Request DTOs)
+        // ====================================================================
+        public class AssignLoadRequest
         {
             public int LoadId { get; set; }
             public int DriverId { get; set; }

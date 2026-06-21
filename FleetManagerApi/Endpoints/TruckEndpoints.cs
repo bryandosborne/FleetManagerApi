@@ -1,59 +1,89 @@
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.EntityFrameworkCore;
 using FleetManagerApi.Data;
+using FleetManagerApi.DTOs;
 using FleetManagerApi.Models;
+using Microsoft.EntityFrameworkCore;
 
 public static class TruckEndpoints
 {
     public static void MapTruckEndpoints(this IEndpointRouteBuilder routes)
     {
-        var group = routes.MapGroup("/api/Truck").WithTags(nameof(Truck));
+        var group = routes.MapGroup("/api/Truck").WithTags("Truck");
 
-        group.MapGet("/", async (FleetManagerApiContext db) =>
+        // 1. Get All Trucks
+        group.MapGet("/", static async (FleetManagerApiContext db) =>
         {
-            return await db.Trucks.ToListAsync();
+            var trucks = await db.Trucks.ToListAsync();
+
+            var dtos = trucks.Select(t => new TruckDto
+            {
+                Id = t.Id,
+                TruckNumber = t.TruckNumber,
+                CurrentDriverId = t.DriverId
+            }).ToList();
+
+            return Results.Ok(dtos);
         })
         .WithName("GetAllTrucks");
 
-        group.MapGet("/{id}", async Task<Results<Ok<Truck>, NotFound>> (int id, FleetManagerApiContext db) =>
+        // 2. Get Truck By ID
+        group.MapGet("/{id}", static async (int id, FleetManagerApiContext db) =>
         {
-            return await db.Trucks.AsNoTracking()
-                .FirstOrDefaultAsync(model => model.Id == id)
-                is Truck model
-                    ? TypedResults.Ok(model)
-                    : TypedResults.NotFound();
+            var t = await db.Trucks.AsNoTracking()
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (t is null)
+                return Results.NotFound($"Truck with ID {id} was not found.");
+
+            var dto = new TruckDto
+            {
+                Id = t.Id,
+                TruckNumber = t.TruckNumber,
+                CurrentDriverId = t.DriverId
+            };
+
+            return Results.Ok(dto);
         })
         .WithName("GetTruckById");
 
-        group.MapPut("/{id}", async Task<Results<Ok, NotFound>> (int id, Truck truck, FleetManagerApiContext db) =>
+        // 3. Update Truck
+        group.MapPut("/{id}", static async (int id, TruckDto dto, FleetManagerApiContext db) =>
         {
             var affected = await db.Trucks
-                .Where(model => model.Id == id)
-                .ExecuteUpdateAsync(setters => setters
-                .SetProperty(m => m.Id, truck.Id)
-                .SetProperty(m => m.TruckNumber, truck.TruckNumber)
-                .SetProperty(m => m.DriverId, truck.DriverId)
-        );
+                .Where(m => m.Id == id)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(m => m.TruckNumber, dto.TruckNumber)
+                    .SetProperty(m => m.DriverId, dto.CurrentDriverId)
+                );
 
-            return affected == 1 ? TypedResults.Ok() : TypedResults.NotFound();
+            return affected == 1 ? Results.Ok() : Results.NotFound();
         })
         .WithName("UpdateTruck");
 
-        group.MapPost("/", async (Truck truck, FleetManagerApiContext db) =>
+        // 4. Create Truck
+        group.MapPost("/", static async (TruckDto dto, FleetManagerApiContext db) =>
         {
-            db.Trucks.Add(truck);
+            var t = new Truck
+            {
+                TruckNumber = dto.TruckNumber,
+                DriverId = dto.CurrentDriverId
+            };
+
+            db.Trucks.Add(t);
             await db.SaveChangesAsync();
-            return TypedResults.Created($"/api/Truck/{truck.Id}",truck);
+
+            dto.Id = t.Id;
+            return Results.Created($"/api/Truck/{t.Id}", dto);
         })
         .WithName("CreateTruck");
 
-        group.MapDelete("/{id}", async Task<Results<Ok, NotFound>> (int id, FleetManagerApiContext db) =>
+        // 5. Delete Truck
+        group.MapDelete("/{id}", static async (int id, FleetManagerApiContext db) =>
         {
             var affected = await db.Trucks
-                .Where(model => model.Id == id)
+                .Where(m => m.Id == id)
                 .ExecuteDeleteAsync();
 
-            return affected == 1 ? TypedResults.Ok() : TypedResults.NotFound();
+            return affected == 1 ? Results.Ok() : Results.NotFound();
         })
         .WithName("DeleteTruck");
     }
