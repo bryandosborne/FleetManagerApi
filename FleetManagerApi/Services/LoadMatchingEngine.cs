@@ -1,0 +1,53 @@
+﻿using FleetManagerApi.Common.Utilities;
+using FleetManagerApi.DTOs;
+using FleetManagerApi.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+
+namespace FleetManagerApi.Services
+{
+    public class LoadMatchingEngine : ILoadMatchingEngine
+    {
+        // The scoring matrix weights
+        private const decimal DistanceWeight = 0.6m;
+        private const decimal HosWeight = 0.4m;
+        private const decimal AverageTruckSpeedMph = 55.0m;
+
+        public DriverMatchResult FindBestDriverForLoad(Load load, List<Driver> availableDrivers)
+        {
+            var scoringSheet = new List<DriverScore>();
+
+            foreach (var driver in availableDrivers)
+            {
+                // 1. SPATIAL: Calculate deadhead miles to the load pickup
+                double deadheadMiles = DistanceHelper.CalculateDistance(
+                    (double)driver.CurrentLatitude, (double)driver.CurrentLongitude,
+                    (double)load.PickupLatitude, (double)load.PickupLongitude);
+
+                // 2. TEMPORAL: How long will it take to physically drive to the pickup?
+                double travelHoursToPickup = deadheadMiles / (double)AverageTruckSpeedMph;
+                TimeSpan timeToArrive = TimeSpan.FromHours(travelHoursToPickup);
+
+                // 3. COMPLIANCE: Does the driver legally have enough HOS time to get there and finish the load?
+                if (driver.RemainingHours < timeToArrive)
+                {
+                    continue; // Automatically filter out drivers who will violate HOS rules
+                }
+
+                // 4. SCORING MATRIX: Lower deadhead miles and higher remaining hours = Higher Score
+                decimal distanceScore = 100 - (decimal)deadheadMiles;
+                decimal hosScore = (decimal)driver.RemainingHours.TotalHours * 5;
+                decimal totalScore = (distanceScore * DistanceWeight) + (hosScore * HosWeight);
+
+                scoringSheet.Add(new DriverScore { Driver = driver, Score = totalScore, DeadheadMiles = deadheadMiles });
+            }
+
+            // Return the driver with the absolute highest optimized score
+            var bestMatch = scoringSheet.OrderByDescending(s => s.Score).FirstOrDefault();
+            return new DriverMatchResult { BestDriver = bestMatch?.Driver, Score = bestMatch?.Score ?? 0 };
+        }
+    }
+
+}

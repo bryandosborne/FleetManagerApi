@@ -1,8 +1,11 @@
 using FleetManagerApi.Data;
-using Scalar.AspNetCore;
+using FleetManagerApi.Endpoints;
+using FleetManagerApi.Services;
 using Microsoft.EntityFrameworkCore;
+using Scalar.AspNetCore;
 
 
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +13,11 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddDbContext<FleetManagerApiContext>(options =>
     options.UseNpgsql(connectionString));
+
+builder.Services.AddScoped<IDriverService, DriverService>();
+
+builder.Services.AddScoped<ILoadMatchingEngine, LoadMatchingEngine>();
+
 
 builder.Services.AddControllers();
 
@@ -33,6 +41,8 @@ app.MapControllers();
 app.MapDriverEndpoints();
 
 app.MapTruckEndpoints();
+
+app.MapMatchEndpoints();
 
 app.MapLoadEndpoints();
 

@@ -134,7 +134,7 @@
         /// <summary>
         /// Scans backward to locate the end time of the most recent continuous rest block matching a targeted threshold.
         /// </summary>
-        private DateTime FindLastResetTime(List<LogEvent> sortedLogs, TimeSpan requiredResetDuration, DateTime evaluationTime)
+        public DateTime FindLastResetTime(List<LogEvent> sortedLogs, TimeSpan requiredResetDuration, DateTime evaluationTime)
         {
             DateTime lastResetEndTime = sortedLogs.First().Timestamp;
 
@@ -157,7 +157,7 @@
             return lastResetEndTime;
         }
 
-        private HosRemainingTime GetFullLimits()
+        public HosRemainingTime GetFullLimits()
         {
             return new HosRemainingTime
             {

@@ -3,6 +3,7 @@ using System;
 using FleetManagerApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FleetManagerApi.Migrations
 {
     [DbContext(typeof(FleetManagerApiContext))]
-    partial class FleetManagerApiContextModelSnapshot : ModelSnapshot
+    [Migration("20260620215918_UpdateLogEventsTableSchema")]
+    partial class UpdateLogEventsTableSchema
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -98,9 +101,6 @@ namespace FleetManagerApi.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int?>("DriverId")
-                        .HasColumnType("integer");
-
                     b.Property<DateTime?>("ETA")
                         .HasColumnType("timestamp without time zone");
 
@@ -118,9 +118,6 @@ namespace FleetManagerApi.Migrations
 
                     b.Property<int?>("TruckId")
                         .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp without time zone");
 
                     b.HasKey("Id");
 
@@ -169,7 +166,7 @@ namespace FleetManagerApi.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("Timestamp")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 

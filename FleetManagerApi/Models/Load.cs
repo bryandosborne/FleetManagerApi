@@ -7,6 +7,10 @@ namespace FleetManagerApi.Models
     {
         public int Id { get; set; }
         public int? TruckId { get; set; }
+
+        // 1. ADD THIS FOR THE DRIVER FOREIGN KEY ASSIGNMENT Link
+        public int? DriverId { get; set; }
+
         public string BOL { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public LoadStatus Status { get; set; }
@@ -31,6 +35,10 @@ namespace FleetManagerApi.Models
 
         [Column(TypeName = "timestamp without time zone")]
         public DateTime? ETA { get; set; }
+
+        // 2. ADD THIS FOR TRACKING DATA REVISIONS
+        [Column(TypeName = "timestamp without time zone")]
+        public DateTime? UpdatedAt { get; set; }
     }
 }
 

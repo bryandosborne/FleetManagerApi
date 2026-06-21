@@ -2,10 +2,10 @@
 {
     public enum LoadStatus
     {
-        AwaitingPickup,
-        InTransit,
-        Delivered,
-        Delayed,
-        Cancelled
+        Available = 1,
+        Assigned = 2,    
+        InTransit = 3,
+        Completed = 4,
+        Cancelled = 5
     }
 }
