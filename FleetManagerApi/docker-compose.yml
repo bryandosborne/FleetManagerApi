@@ -25,7 +25,17 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=fleet-db;Database=FleetDb;Username=fleet_admin;Password=YourSecurePasswordHere
     depends_on:
-      - fleet-db
+      - fleet-db   
+      
+  fleet-gateway:
+    image: nginx:alpine
+    container_name: fleet-nginx-proxy
+    ports:
+      - "80:80" # Opens standard public HTTP traffic to the outside world
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro # Mounts your local config file into Nginx as Read-Only (ro)
+    depends_on:
+      - fleet-api
 
 volumes:
   postgres_data:
