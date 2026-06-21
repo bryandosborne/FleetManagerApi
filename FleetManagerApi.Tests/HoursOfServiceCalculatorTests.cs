@@ -72,37 +72,41 @@ namespace FleetManagerApi.Tests
             Assert.Equal(expectedResetTime, actualResetTime);
         }
 
-        [Fact]
-        public void FindLastResetTime_ShouldReturnOldestLog_WhenNoResetThresholdIsMet()
+        [Theory]
+        [InlineData(10)] // Test case A: Checks the 10-hour daily shift reset threshold
+        [InlineData(34)] // Test case B: Checks the 34-hour weekly restart threshold
+        public void FindLastResetTime_ShouldReturnOldestLog_WhenNoResetThresholdIsMet(int requiredResetHours)
         {
             // ====================================================================
             // 1. ARRANGE
             // ====================================================================
-            // Goal: Verify fallback behavior. If a driver has been driving or on-duty 
-            // non-stop, they have earned zero resets.
-
+            // The fixed time anchor keeps our evaluation completely deterministic.
             var evaluationTime = new DateTime(2026, 6, 21, 12, 0, 0, DateTimeKind.Utc);
             DateTime oldestLogTimestamp = evaluationTime.AddDays(-5);
 
+            // Simulate a driver who did non-stop active work (No OffDuty or Sleeper logs)
             var historicalLogs = new List<LogEvent>
-            {
-                new LogEvent { Timestamp = oldestLogTimestamp, Status = DutyStatus.OnDutyNotDriving },
-                new LogEvent { Timestamp = evaluationTime.AddDays(-2), Status = DutyStatus.Driving }
-            };
+    {
+        new LogEvent { Timestamp = oldestLogTimestamp, Status = DutyStatus.OnDutyNotDriving },
+        new LogEvent { Timestamp = evaluationTime.AddDays(-2), Status = DutyStatus.Driving }
+    };
 
-            TimeSpan requiredReset = TimeSpan.FromHours(10); // Daily 10-hour shift limit
+            // Map our parameterized input integer straight into a strongly-typed TimeSpan
+            TimeSpan requiredResetThreshold = TimeSpan.FromHours(requiredResetHours);
 
             // ====================================================================
             // 2. ACT
             // ====================================================================
-            DateTime actualResetTime = _calculator.FindLastResetTime(historicalLogs, requiredReset, evaluationTime);
+            DateTime actualResetTime = _calculator.FindLastResetTime(historicalLogs, requiredResetThreshold, evaluationTime);
 
             // ====================================================================
             // 3. ASSERT
             // ====================================================================
-            // Because the driver never took a continuous 10-hour off-duty break, 
-            // the engine must fall back to the very first tracking point in history.
+            // Because the driver never accumulated a single minute of continuous rest, 
+            // the engine must fall back to the very first tracking point in history, 
+            // regardless of whether we evaluated a 10-hour window or a 34-hour window.
             Assert.Equal(oldestLogTimestamp, actualResetTime);
         }
+
     }
 }

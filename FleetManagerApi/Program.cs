@@ -46,4 +46,6 @@ app.MapMatchEndpoints();
 
 app.MapLoadEndpoints();
 
+app.MapSecurityEndpoints(builder.Configuration);
+
 app.Run();

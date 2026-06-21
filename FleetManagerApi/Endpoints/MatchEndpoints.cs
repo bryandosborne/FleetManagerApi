@@ -122,7 +122,8 @@ namespace FleetManagerApi.Endpoints
                     AssignedAt = load.UpdatedAt ?? DateTime.UtcNow
                 });
             })
-            .WithName("AssignDriverToLoad");
+            .WithName("AssignDriverToLoad")
+            .RequireAuthorization();
         }
 
         // ====================================================================
