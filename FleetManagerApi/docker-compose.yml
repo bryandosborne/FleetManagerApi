@@ -1,6 +1,14 @@
-﻿version: '3.8'
+﻿# =========================================================================
+# Multi-Container Application Orchestration
+# Project: Fleet Manager Infrastructure Stack
+# Target Environment: Local Production Mirror
+# =========================================================================
 
 services:
+
+  # -----------------------------------------------------------------------
+  # Data Persistence Layer
+  # -----------------------------------------------------------------------
   fleet-db:
     image: postgres:15-alpine
     container_name: fleet-postgres-db
@@ -12,31 +20,41 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
 
+  # -----------------------------------------------------------------------
+  # Application Core Layer (.NET Runtime)
+  # -----------------------------------------------------------------------
   fleet-api:
     image: fleetmanagerapi:latest
     container_name: fleet-minimal-api
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__DefaultConnection=Host=fleet-db;Database=FleetDb;Username=fleet_admin;Password=YourSecurePasswordHere
     depends_on:
-      - fleet-db   
-      
+      - fleet-db
+    restart: unless-stopped
+
+  # -----------------------------------------------------------------------
+  # Ingress / Reverse Proxy Layer
+  # -----------------------------------------------------------------------
   fleet-gateway:
     image: nginx:alpine
     container_name: fleet-nginx-proxy
     ports:
-      - "80:80" # Opens standard public HTTP traffic to the outside world
+      - "80:80"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro # Mounts your local config file into Nginx as Read-Only (ro)
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - fleet-api
+    restart: unless-stopped
 
+# -------------------------------------------------------------------------
+# Volume Definitions
+# -------------------------------------------------------------------------
 volumes:
   postgres_data:
 
